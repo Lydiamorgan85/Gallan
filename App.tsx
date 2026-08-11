@@ -1,10 +1,12 @@
 ﻿/**
  * App entry point for Gallán.
  *
- * Loads the stored sites and renders them as a list, where each row can be
- * saved or unsaved. On a real device the local SQLite database is seeded and
- * queried; on web, which has no SQLite, the sites are read from bundled seed
- * data instead so the preview still runs.
+ * Loads the stored sites and renders them as a list where each row can be saved
+ * or unsaved. On a real device the local SQLite database is seeded and queried;
+ * on web, which has no SQLite, sites are read from bundled seed data instead.
+ *
+ * The content sits in a width-constrained, centred column so the layout works
+ * across phones, tablets and desktop browsers.
  */
 
 import { useEffect, useState } from "react";
@@ -20,6 +22,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { seedInitialSites, toggleSaved } from "./src/lib/siteRepository";
 import { loadSites } from "./src/lib/loadSites";
+import { useResponsiveLayout } from "./src/lib/useResponsiveLayout";
 import { SITE_TYPE_LABELS } from "./src/constants/config";
 import type { Site } from "./src/types/site";
 
@@ -27,11 +30,14 @@ export default function App() {
   const [isReady, setIsReady] = useState(false);
   const [sites, setSites] = useState<Site[]>([]);
 
+  // Layout values that adapt to the current screen width.
+  const { contentMaxWidth } = useResponsiveLayout();
+
   useEffect(() => {
     // Prepare data on launch. Seeding only runs on a real device, since web has
-    // no database to seed. loadSites then returns either database rows (device)
-    // or the seed data (web). try/finally ensures the app always leaves its
-    // loading state.
+    // no database to seed. loadSites then returns database rows (device) or the
+    // seed data (web). try/finally ensures the app always leaves its loading
+    // state.
     async function prepare() {
       try {
         if (Platform.OS !== "web") {
@@ -75,40 +81,57 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.screen}>
       <StatusBar style="auto" />
-      <Text style={styles.heading}>Gallán</Text>
-      <Text style={styles.subheading}>Ireland's sacred landscape</Text>
 
-      <FlatList
-        data={sites}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardText}>
-              <Text style={styles.siteName}>{item.name}</Text>
-              <Text style={styles.siteMeta}>
-                {SITE_TYPE_LABELS[item.type]}
-                {item.county ? "  ·  " + item.county : ""}
-              </Text>
+      {/* Centred, width-constrained column so the layout holds on any screen. */}
+      <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
+        <Text style={styles.heading}>Gallán</Text>
+        <Text style={styles.subheading}>Ireland's sacred landscape</Text>
+
+        <FlatList
+          data={sites}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardText}>
+                <Text style={styles.siteName}>{item.name}</Text>
+                <Text style={styles.siteMeta}>
+                  {SITE_TYPE_LABELS[item.type]}
+                  {item.county ? "  ·  " + item.county : ""}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => handleToggleSaved(item.id)}
+                hitSlop={12}
+                style={styles.starButton}
+              >
+                <Text style={styles.star}>{item.isSaved ? "★" : "☆"}</Text>
+              </Pressable>
             </View>
-            <Pressable
-              onPress={() => handleToggleSaved(item.id)}
-              hitSlop={12}
-              style={styles.starButton}
-            >
-              <Text style={styles.star}>{item.isSaved ? "★" : "☆"}</Text>
-            </Pressable>
-          </View>
-        )}
-      />
+          )}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fdfcfa", paddingTop: 64, paddingHorizontal: 20 },
+  // Full-bleed background. Centres the content column horizontally.
+  screen: {
+    flex: 1,
+    backgroundColor: "#fdfcfa",
+    alignItems: "center",
+  },
+  // The constrained column. width 100% lets it fill a phone; maxWidth (applied
+  // inline from the layout hook) caps it on tablet and desktop.
+  content: {
+    flex: 1,
+    width: "100%",
+    paddingTop: 64,
+    paddingHorizontal: 20,
+  },
   centre: { flex: 1, alignItems: "center", justifyContent: "center" },
   heading: { fontSize: 30, fontWeight: "700", color: "#2a2a2a" },
   subheading: { fontSize: 15, color: "#777", marginBottom: 24 },
