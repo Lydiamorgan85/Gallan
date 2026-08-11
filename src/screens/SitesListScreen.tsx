@@ -1,11 +1,10 @@
 ﻿/**
  * Sites list screen.
  *
- * Shows every site ordered by distance from the user, each as a card with its
- * name, type, county, and distance and direction. When a site has a photograph
- * the card leads with it, so imagery carries the screen; sites without a photo
- * fall back to a clean text card. Tapping a card opens the detail screen; the
- * star saves or unsaves. All colour and spacing come from the shared theme.
+ * Shows every site ordered by distance from the user. Each site is a card that
+ * leads with its photograph when it has one, so imagery carries the screen. A
+ * warm hero band heads the list. Tapping a card opens the detail screen; the
+ * star saves or unsaves. All colour, spacing and depth come from the theme.
  */
 
 import { useEffect, useState } from "react";
@@ -91,21 +90,26 @@ export function SitesListScreen({ navigation }: Props) {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
-        <Text style={styles.subheading}>Sacred sites near you</Text>
-
-        {!usingRealLocation && (
-          <Text style={styles.notice}>
-            Showing distances from the centre of Ireland. Open the app on your
-            phone with location enabled to see sites near you.
-          </Text>
-        )}
-
+      <View style={[styles.contentWrap, { maxWidth: contentMaxWidth }]}>
         <FlatList
           data={rankedSites}
           keyExtractor={(entry) => entry.site.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={styles.hero}>
+              <Text style={styles.heroTitle}>Sacred sites near you</Text>
+              <Text style={styles.heroSubtitle}>
+                Ancient places across the Irish landscape
+              </Text>
+              {!usingRealLocation && (
+                <Text style={styles.notice}>
+                  Showing distances from the centre of Ireland. Open on your phone
+                  with location enabled to see sites near you.
+                </Text>
+              )}
+            </View>
+          }
           renderItem={({ item }) => {
             const hasImage = item.site.images && item.site.images.length > 0;
             return (
@@ -121,16 +125,20 @@ export function SitesListScreen({ navigation }: Props) {
                     style={styles.cardImage}
                     resizeMode="cover"
                   />
-                ) : null}
+                ) : (
+                  // A slim coloured accent strip stands in for a photo until one
+                  // is added, so imageless cards still feel deliberate.
+                  <View style={styles.accentStrip} />
+                )}
 
                 <View style={styles.cardBody}>
                   <View style={styles.cardText}>
+                    <Text style={styles.typeLabel}>
+                      {SITE_TYPE_LABELS[item.site.type].toUpperCase()}
+                    </Text>
                     <Text style={styles.siteName}>{item.site.name}</Text>
                     <Text style={styles.siteMeta}>
-                      {SITE_TYPE_LABELS[item.site.type]}
-                      {item.site.county ? "  ·  " + item.site.county : ""}
-                    </Text>
-                    <Text style={styles.distance}>
+                      {item.site.county ? item.site.county + "   ·   " : ""}
                       {formatDistance(item.distanceKm)}  ·  {item.compassDirection}
                     </Text>
                   </View>
@@ -155,24 +163,29 @@ export function SitesListScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background, alignItems: "center" },
-  content: {
-    flex: 1,
-    width: "100%",
-    paddingTop: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
+  contentWrap: { flex: 1, width: "100%" },
   centre: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.background,
   },
-  subheading: {
-    fontSize: typography.small,
+  list: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
+
+  hero: {
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  heroTitle: {
+    fontSize: typography.title,
+    fontWeight: "800",
+    color: colors.primary,
+    letterSpacing: 0.3,
+  },
+  heroSubtitle: {
+    fontSize: typography.body,
     color: colors.textMuted,
-    marginBottom: spacing.md,
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    marginTop: spacing.xs,
   },
   notice: {
     fontSize: typography.small,
@@ -182,9 +195,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    marginBottom: spacing.md,
+    marginTop: spacing.md,
   },
-  list: { paddingBottom: spacing.xl },
+
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius,
@@ -192,14 +205,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
+    // Soft depth. Reads subtly on web, more richly on a device.
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  cardImage: { width: "100%", height: 160, backgroundColor: colors.border },
+  cardImage: { width: "100%", height: 180, backgroundColor: colors.border },
+  accentStrip: { height: 6, backgroundColor: colors.primaryLight },
   cardBody: {
     flexDirection: "row",
     alignItems: "center",
     padding: spacing.md,
   },
   cardText: { flex: 1 },
+  typeLabel: {
+    fontSize: 11,
+    color: colors.accent,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    marginBottom: spacing.xs,
+  },
   siteName: {
     fontSize: typography.heading,
     fontWeight: "700",
@@ -209,12 +236,6 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     color: colors.textMuted,
     marginTop: spacing.xs,
-  },
-  distance: {
-    fontSize: typography.small,
-    color: colors.accent,
-    marginTop: spacing.sm,
-    fontWeight: "600",
   },
   starButton: { paddingLeft: spacing.md },
   star: { fontSize: 26, color: colors.accent },
