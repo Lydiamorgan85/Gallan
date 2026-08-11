@@ -1,10 +1,10 @@
-﻿/**
+/**
  * Sites list screen.
  *
- * Shows every site ordered by distance from the user. Each site is a card that
- * leads with its photograph when it has one, so imagery carries the screen. A
- * warm hero band heads the list. Tapping a card opens the detail screen; the
- * star saves or unsaves. All colour, spacing and depth come from the theme.
+ * Shows every site ordered by distance from the user. A site with a bundled
+ * photograph leads with it, so imagery carries the screen; sites without one
+ * fall back to a coloured accent strip so they still look deliberate. A warm
+ * hero heads the list. Tapping a card opens the detail screen; the star saves.
  */
 
 import { useEffect, useState } from "react";
@@ -26,6 +26,7 @@ import { sitesByDistance, type SiteWithDistance } from "../lib/geo";
 import { useResponsiveLayout } from "../lib/useResponsiveLayout";
 import { SITE_TYPE_LABELS } from "../constants/config";
 import { colors, spacing, typography, radius } from "../constants/theme";
+import { SITE_IMAGES } from "../constants/siteImages";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SitesList">;
@@ -111,7 +112,7 @@ export function SitesListScreen({ navigation }: Props) {
             </View>
           }
           renderItem={({ item }) => {
-            const hasImage = item.site.images && item.site.images.length > 0;
+            const image = SITE_IMAGES[item.site.id];
             return (
               <Pressable
                 style={styles.card}
@@ -119,15 +120,13 @@ export function SitesListScreen({ navigation }: Props) {
                   navigation.navigate("SiteDetail", { siteId: item.site.id })
                 }
               >
-                {hasImage ? (
+                {image ? (
                   <Image
-                    source={{ uri: item.site.images![0].source }}
+                    source={image.source}
                     style={styles.cardImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 ) : (
-                  // A slim coloured accent strip stands in for a photo until one
-                  // is added, so imageless cards still feel deliberate.
                   <View style={styles.accentStrip} />
                 )}
 
@@ -138,8 +137,8 @@ export function SitesListScreen({ navigation }: Props) {
                     </Text>
                     <Text style={styles.siteName}>{item.site.name}</Text>
                     <Text style={styles.siteMeta}>
-                      {item.site.county ? item.site.county + "   ·   " : ""}
-                      {formatDistance(item.distanceKm)}  ·  {item.compassDirection}
+                      {item.site.county ? item.site.county + "   �   " : ""}
+                      {formatDistance(item.distanceKm)}  �  {item.compassDirection}
                     </Text>
                   </View>
                   <Pressable
@@ -148,7 +147,7 @@ export function SitesListScreen({ navigation }: Props) {
                     style={styles.starButton}
                   >
                     <Text style={styles.star}>
-                      {item.site.isSaved ? "★" : "☆"}
+                      {item.site.isSaved ? "?" : "?"}
                     </Text>
                   </Pressable>
                 </View>
@@ -171,11 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   list: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
-
-  hero: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-  },
+  hero: { paddingTop: spacing.lg, paddingBottom: spacing.md },
   heroTitle: {
     fontSize: typography.title,
     fontWeight: "800",
@@ -197,7 +192,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginTop: spacing.md,
   },
-
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius,
@@ -205,20 +199,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
-    // Soft depth. Reads subtly on web, more richly on a device.
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
   },
-  cardImage: { width: "100%", height: 180, backgroundColor: colors.border },
+  cardImage: { width: "100%", height: 220, backgroundColor: colors.border },
   accentStrip: { height: 6, backgroundColor: colors.primaryLight },
-  cardBody: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: spacing.md,
-  },
+  cardBody: { flexDirection: "row", alignItems: "center", padding: spacing.md },
   cardText: { flex: 1 },
   typeLabel: {
     fontSize: 11,
