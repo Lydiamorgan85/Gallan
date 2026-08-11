@@ -1,4 +1,4 @@
-@'
+
 # Gallán
 
 Gallán is an offline first field companion for exploring Ireland's sacred landscape. It brings megalithic monuments, holy wells, ring forts and other heritage sites into one map that works with no signal, which is exactly where these places tend to be.
