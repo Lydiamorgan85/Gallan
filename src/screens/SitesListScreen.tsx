@@ -1,16 +1,18 @@
 ﻿/**
  * Sites list screen.
  *
- * Shows every site ordered by distance from the user, each with its distance
- * and compass direction. Tapping a site opens its detail screen; tapping the
- * star saves or unsaves it. Location and ranking use the geo engine, so this
- * screen only presents data and handles taps.
+ * Shows every site ordered by distance from the user, each as a card with its
+ * name, type, county, and distance and direction. When a site has a photograph
+ * the card leads with it, so imagery carries the screen; sites without a photo
+ * fall back to a clean text card. Tapping a card opens the detail screen; the
+ * star saves or unsaves. All colour and spacing come from the shared theme.
  */
 
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -24,6 +26,7 @@ import { getCurrentLocation } from "../lib/location";
 import { sitesByDistance, type SiteWithDistance } from "../lib/geo";
 import { useResponsiveLayout } from "../lib/useResponsiveLayout";
 import { SITE_TYPE_LABELS } from "../constants/config";
+import { colors, spacing, typography, radius } from "../constants/theme";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SitesList">;
@@ -81,7 +84,7 @@ export function SitesListScreen({ navigation }: Props) {
   if (!isReady) {
     return (
       <View style={styles.centre}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -102,32 +105,48 @@ export function SitesListScreen({ navigation }: Props) {
           data={rankedSites}
           keyExtractor={(entry) => entry.site.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.card}
-              onPress={() =>
-                navigation.navigate("SiteDetail", { siteId: item.site.id })
-              }
-            >
-              <View style={styles.cardText}>
-                <Text style={styles.siteName}>{item.site.name}</Text>
-                <Text style={styles.siteMeta}>
-                  {SITE_TYPE_LABELS[item.site.type]}
-                  {item.site.county ? "  ·  " + item.site.county : ""}
-                </Text>
-                <Text style={styles.distance}>
-                  {formatDistance(item.distanceKm)}  ·  {item.compassDirection}
-                </Text>
-              </View>
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => {
+            const hasImage = item.site.images && item.site.images.length > 0;
+            return (
               <Pressable
-                onPress={() => handleToggleSaved(item.site.id)}
-                hitSlop={12}
-                style={styles.starButton}
+                style={styles.card}
+                onPress={() =>
+                  navigation.navigate("SiteDetail", { siteId: item.site.id })
+                }
               >
-                <Text style={styles.star}>{item.site.isSaved ? "★" : "☆"}</Text>
+                {hasImage ? (
+                  <Image
+                    source={{ uri: item.site.images![0].source }}
+                    style={styles.cardImage}
+                    resizeMode="cover"
+                  />
+                ) : null}
+
+                <View style={styles.cardBody}>
+                  <View style={styles.cardText}>
+                    <Text style={styles.siteName}>{item.site.name}</Text>
+                    <Text style={styles.siteMeta}>
+                      {SITE_TYPE_LABELS[item.site.type]}
+                      {item.site.county ? "  ·  " + item.site.county : ""}
+                    </Text>
+                    <Text style={styles.distance}>
+                      {formatDistance(item.distanceKm)}  ·  {item.compassDirection}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => handleToggleSaved(item.site.id)}
+                    hitSlop={12}
+                    style={styles.starButton}
+                  >
+                    <Text style={styles.star}>
+                      {item.site.isSaved ? "★" : "☆"}
+                    </Text>
+                  </Pressable>
+                </View>
               </Pressable>
-            </Pressable>
-          )}
+            );
+          }}
         />
       </View>
     </View>
@@ -135,33 +154,68 @@ export function SitesListScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#fdfcfa", alignItems: "center" },
-  content: { flex: 1, width: "100%", paddingTop: 16, paddingHorizontal: 20 },
-  centre: { flex: 1, alignItems: "center", justifyContent: "center" },
-  subheading: { fontSize: 15, color: "#777", marginBottom: 16 },
-  notice: {
-    fontSize: 13,
-    color: "#8a6d3b",
-    backgroundColor: "#fcf8e3",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
+  screen: { flex: 1, backgroundColor: colors.background, alignItems: "center" },
+  content: {
+    flex: 1,
+    width: "100%",
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.md,
   },
-  list: { paddingBottom: 40 },
+  centre: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
+  subheading: {
+    fontSize: typography.small,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  notice: {
+    fontSize: typography.small,
+    color: colors.text,
+    backgroundColor: colors.surface,
+    borderRadius: radius,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  list: { paddingBottom: spacing.xl },
   card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: "hidden",
+  },
+  cardImage: { width: "100%", height: 160, backgroundColor: colors.border },
+  cardBody: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#eee",
+    padding: spacing.md,
   },
   cardText: { flex: 1 },
-  siteName: { fontSize: 17, fontWeight: "600", color: "#2a2a2a" },
-  siteMeta: { fontSize: 13, color: "#888", marginTop: 2 },
-  distance: { fontSize: 13, color: "#c9a227", marginTop: 4, fontWeight: "600" },
-  starButton: { paddingLeft: 12 },
-  star: { fontSize: 24, color: "#c9a227" },
+  siteName: {
+    fontSize: typography.heading,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  siteMeta: {
+    fontSize: typography.small,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
+  distance: {
+    fontSize: typography.small,
+    color: colors.accent,
+    marginTop: spacing.sm,
+    fontWeight: "600",
+  },
+  starButton: { paddingLeft: spacing.md },
+  star: { fontSize: 26, color: colors.accent },
 });
